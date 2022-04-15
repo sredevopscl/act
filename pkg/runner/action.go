@@ -364,12 +364,6 @@ func execAsComposite(step actionStep) common.Executor {
 	action := step.getActionModel()
 
 	return func(ctx context.Context) error {
-		// Disable some features of composite actions, only for feature parity with github
-		for _, compositeStep := range action.Runs.Steps {
-			if err := compositeStep.Validate(rc.Config.CompositeRestrictions); err != nil {
-				return err
-			}
-		}
 		inputs := make(map[string]interface{})
 		eval := step.getRunContext().NewExpressionEvaluator()
 		// Set Defaults

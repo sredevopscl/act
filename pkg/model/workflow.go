@@ -23,21 +23,6 @@ type Workflow struct {
 	Defaults Defaults          `yaml:"defaults"`
 }
 
-// CompositeRestrictions is the structure to control what is allowed in composite actions
-type CompositeRestrictions struct {
-	AllowCompositeUses            bool
-	AllowCompositeIf              bool
-	AllowCompositeContinueOnError bool
-}
-
-func defaultCompositeRestrictions() *CompositeRestrictions {
-	return &CompositeRestrictions{
-		AllowCompositeUses:            true,
-		AllowCompositeIf:              true,
-		AllowCompositeContinueOnError: false,
-	}
-}
-
 // On events for the workflow
 func (w *Workflow) On() []string {
 	switch w.RawOn.Kind {
@@ -427,17 +412,14 @@ func (s *Step) Type() StepType {
 	return StepTypeUsesActionRemote
 }
 
-func (s *Step) Validate(config *CompositeRestrictions) error {
-	if config == nil {
-		config = defaultCompositeRestrictions()
-	}
-	if s.Type() != StepTypeRun && !config.AllowCompositeUses {
+func (s *Step) Validate() error {
+	if s.Type() != StepTypeRun {
 		return fmt.Errorf("(StepID: %s): Unexpected value 'uses'", s.String())
 	} else if s.Type() == StepTypeRun && s.Shell == "" {
 		return fmt.Errorf("(StepID: %s): Required property is missing: 'shell'", s.String())
-	} else if !s.If.IsZero() && !config.AllowCompositeIf {
+	} else if !s.If.IsZero() {
 		return fmt.Errorf("(StepID: %s): Property is not available: 'if'", s.String())
-	} else if s.ContinueOnError && !config.AllowCompositeContinueOnError {
+	} else if s.ContinueOnError {
 		return fmt.Errorf("(StepID: %s): Property is not available: 'continue-on-error'", s.String())
 	}
 	return nil
