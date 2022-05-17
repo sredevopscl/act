@@ -100,7 +100,15 @@ func newJobExecutor(info jobInfo, sf stepFactory, rc *RunContext) common.Executo
 	pipeline = append(pipeline, steps...)
 
 	return common.NewPipelineExecutor(pipeline...).
-		Finally(postExecutor).
+		Finally(func(ctx context.Context) error {
+			activeContext := ctx
+			if activeContext.Err() == context.Canceled {
+				// in case of an aborted run, we still should execute the
+				// post steps to allow cleanup.
+				activeContext = context.Background()
+			}
+			return postExecutor(activeContext)
+		}).
 		Finally(info.interpolateOutputs()).
 		Finally(info.closeContainer())
 }

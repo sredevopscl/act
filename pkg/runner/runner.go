@@ -171,7 +171,13 @@ func (runner *runnerImpl) NewPlanExecutor(plan *model.Plan) common.Executor {
 
 							if runner.config.AutoRemove && isLastRunningContainer(s, r) {
 								log.Infof("Cleaning up container for job %s", rc.JobName)
-								if err := rc.stopJobContainer()(ctx); err != nil {
+
+								cleanupCtx := ctx
+								if ctx.Err() == context.Canceled {
+									cleanupCtx = context.Background()
+								}
+
+								if err := rc.stopJobContainer()(cleanupCtx); err != nil {
 									log.Errorf("Error while cleaning container: %v", err)
 								}
 							}
